@@ -6,14 +6,14 @@ const { InternalServerError, NotFoundError, ForbiddenError } = require("../utils
 // CREATE CUSTOMER
 // =====================
 exports.createCustomer = catchAsync(async (req, res, next) => {
-  const { name, email, password, phone } = req.body;
+  const { name, email, password, phone,date_of_birth } = req.body;
 
   const existing = await Customer.findOne({ email });
   if (existing) {
     return res.status(409).json({ status: "error", message: "Email already exists" });
   }
 
-  const customer = new Customer({ name, email, password, phone });
+  const customer = new Customer({ name, email, password, phone, date_of_birth });
   await customer.save();
 
   res.status(201).json({
@@ -24,6 +24,7 @@ exports.createCustomer = catchAsync(async (req, res, next) => {
       name: customer.name,
       email: customer.email,
       phone: customer.phone,
+      date_of_birth: customer.date_of_birth,
       createdAt: customer.createdAt
     }
   });
@@ -98,7 +99,7 @@ exports.getCustomerById = catchAsync(async (req, res, next) => {
 // UPDATE CUSTOMER
 // =====================
 exports.updateCustomer = catchAsync(async (req, res, next) => {
-  const { name, email, phone } = req.body;
+  const { name, email, phone, date_of_birth } = req.body;
 
   const customer = await Customer.findById(req.params.id);
   if (!customer) {
@@ -108,6 +109,7 @@ exports.updateCustomer = catchAsync(async (req, res, next) => {
   customer.name = name ?? customer.name;
   customer.email = email ?? customer.email;
   customer.phone = phone ?? customer.phone;
+  customer.date_of_birth = date_of_birth ?? customer.date_of_birth
 
   await customer.save();
 
@@ -119,6 +121,8 @@ exports.updateCustomer = catchAsync(async (req, res, next) => {
       name: customer.name,
       email: customer.email,
       phone: customer.phone,
+      date_of_birth: customer.date_of_birth,
+      createdAt: customer.createdAt
     }
   });
 });
