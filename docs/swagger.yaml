@@ -337,7 +337,7 @@ paths:
               required:
                 - refreshToken
               properties:
-                refreshToken:
+                refresh_token:
                   type: string
                   example: "<JWT_REFRESH_TOKEN>"
       responses:
@@ -348,7 +348,22 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ValidationError'
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  message:
+                    type: string
+                    example: Validation failed
+                  errors:
+                    type: object
+                    additionalProperties:
+                      type: array
+                      items:
+                        type: string
+                    example:
+                      refresh_token: ["refersh token is required"]
         '404':
           description: Resource not found
           content:

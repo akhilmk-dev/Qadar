@@ -112,7 +112,7 @@ exports.customerLogout = catchAsync(async (req, res, next) => {
 
   const customer = await Customer.findOne({ refreshToken });
   if (customer) {
-    customer.refreshToken = null;
+    customer.refresh_token = null;
     await customer.save();
   }
 
