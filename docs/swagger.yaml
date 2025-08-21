@@ -1,0 +1,448 @@
+openapi: 3.0.0
+info:
+  title: Qadar Spiritual App API
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3002
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ValidationError:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+          example: Validation failed
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          example:
+            name: ["Name is required"]
+            email: ["Invalid email format"]
+            password: ["Password must be at least 6 characters"]
+            date_of_birth: ["Date of birth is required"]
+    LoginError:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+          example: Validation failed
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          example:
+            email: ["Email is required"]
+            password: ["Password must be at least 6 characters"]
+    ConflictError:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+          example: Email is already registered
+
+    UnauthorizedError:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+          example: Invalid credentials
+    PromptValidationError:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+          example: Validation failed
+        errors:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            prompt: ["Prompt is required"]
+            response: ["Response must be a valid JSON string"]
+            prompt_type: ["Prompt type is required"]
+
+    ForbiddenError:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+          example: Forbidden
+
+    TokenError:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+          example: Invalid refresh token
+
+    NotFoundError:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+          example: Resource not found
+
+    ServerError:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+          example: Internal server error
+
+paths:
+  /api/V1/auth/customer/register:
+    post:
+      tags:
+        - Customer Auth
+      summary: Register a new customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - password
+                - phone
+                - date_of_birth
+              properties:
+                name:
+                  type: string
+                  example: "akhil mk"
+                email:
+                  type: string
+                  format: email
+                  example: "akhil@example.com"
+                password:
+                  type: string
+                  minLength: 6
+                  example: "123456"
+                phone:
+                  type: string
+                  example: "7449490448"
+                date_of_birth:
+                  type: string
+                  example: "1990-05-08"
+
+      responses:
+        '201':
+          description: Registration successful
+          content:
+            application/json:
+              example:
+                status: success
+                message: Registration successful
+                access_token: <JWT_ACCESS_TOKEN>
+                refresh_token: <JWT_REFRESH_TOKEN>
+                data:
+                  _id: 68a6e594623e29e4f496643a
+                  name: test customer
+                  email: testnewcustomer@mail.com
+                  phone: "8756784587"
+                  date_of_birth: "1990-05-07"
+
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '409':
+          description: Conflict (email already exists)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictError'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+  /api/V1/auth/customer/login:
+    post:
+      tags:
+        - Customer Auth
+      summary: Login customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "akhil@example.com"
+                password:
+                  type: string
+                  minLength: 6
+                  example: "123456"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              example:
+                status: success
+                message: "Login Successful!"
+                access_token: "<JWT_ACCESS_TOKEN>"
+                refresh_token: "<JWT_REFRESH_TOKEN>"
+                data:
+                  _id: "64b1e8c1f2a8a6a1c2d3e4f5"
+                  name: "akhil mk"
+                  email: "akhil@example.com"
+                  phone: "7845673847"
+                  date_of_birth: "1990-09-03"
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginError'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+  /api/V1/auth/customer/refresh-token:
+    post:
+      tags:
+        - Customer Auth
+      summary: Refresh access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+                  example: "<JWT_REFRESH_TOKEN>"
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              example:
+                status: success
+                access_token: "<NEW_JWT_ACCESS_TOKEN>"
+                refresh_token: "<NEW_JWT_REFRESH_TOKEN>"
+        '401':
+          description: Invalid refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenError'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+  /api/V1/auth/customer/logout:
+    post:
+      tags:
+        - Customer Auth
+      summary: Logout customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+                  example: "<JWT_REFRESH_TOKEN>"
+      responses:
+        '204':
+          description: Logout successful
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+  
+  /prompts:
+    post:
+      tags:
+        - Prompts
+      summary: Save prompt and response for a customer
+      security:
+        - bearerAuth: []     # Bearer token authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - prompt
+                - response
+                - prompt_type
+              properties:
+                prompt:
+                  type: string
+                  example: "What is the weather today?"
+                response:
+                  type: string
+                  description: JSON string containing the response
+                  example: '{"temperature": "20C", "condition": "sunny"}'
+                prompt_type:
+                  type: string
+                  example: "coffe cup"
+      responses:
+        '201':
+          description: Prompt and response saved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: 64e9f4d7ab1234567890abcd
+                      prompt:
+                        type: string
+                        example: "What is the weather today?"
+                      response:
+                        type: string
+                        example: '{"temperature": "20C", "condition": "sunny"}'
+                      prompt_type:
+                        type: string
+                        example: "coffe cup"
+                      customer:
+                        type: string
+                        example: 64e9f4d7ab1234567890abce
+                      createdAt:
+                        type: string
+                        format: date-time
+                        example: "2025-08-21T14:52:00.000Z"
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PromptValidationError'
+        '401':
+          description: Unauthorized 
+          
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+
+    
+
+
+
+    
