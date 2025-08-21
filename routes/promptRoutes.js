@@ -7,6 +7,6 @@ const { promptSchema } = require('../validations/promptValidation');
 const router = express.Router();
 
 router.post('/save-prompt-response',authenticate,validateMiddleware( promptSchema ), saveResponse);
-router.post('/generate-presigned-url',authenticate,getImageUrl)
+router.post('/generate-presigned-url',getImageUrl)
 
 module.exports = router;
