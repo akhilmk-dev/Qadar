@@ -1,7 +1,7 @@
 const { default: mongoose } = require('mongoose');
 const catchAsync = require('../utils/catchAsync'); // adjust path accordingly
 const { InternalServerError } = require('../utils/customErrors');
-const Prompt = require('../models/promptSchema');
+const Prompt = require('../models/PromptSchema');
 
 
 exports.saveResponse = catchAsync(async (req, res) => {
