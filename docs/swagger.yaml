@@ -369,8 +369,22 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ValidationError'
-
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  message:
+                    type: string
+                    example: Validation failed
+                  errors:
+                    type: object
+                    additionalProperties:
+                      type: array
+                      items:
+                        type: string
+                    example:
+                      refresh_token: ["refresh token is required"]                     
         '401':
           description: Invalid refresh token
           content:
@@ -397,7 +411,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerError'
+                type: object
+                properties:
+                  status: 
+                    type: string
+
+
 
   /api/V1/auth/customer/logout:
     post:
@@ -425,7 +444,22 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ValidationError'
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  message:
+                    type: string
+                    example: Validation failed
+                  errors:
+                    type: object
+                    additionalProperties:
+                      type: array
+                      items:
+                        type: string
+                    example:
+                      refresh_token: ["refresh token is required"]    
 
         '404':
           description: Resource not found
