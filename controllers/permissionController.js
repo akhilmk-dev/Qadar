@@ -7,9 +7,7 @@ const { InternalServerError } = require('../utils/customErrors');
 // Create permission
 exports.createPermission = catchAsync(async (req, res) => {
   const { permission_name, page_url, group } = req.body;
-
   const isPermissionExist = await Permission.findOne({ permission_name });
-  console.log(isPermissionExist);
   if (isPermissionExist) {
     return res.status(409).json({
       status: "error",
@@ -17,10 +15,8 @@ exports.createPermission = catchAsync(async (req, res) => {
       error: "Conflict error"
     });
   }
-
   const permission = new Permission({ permission_name, page_url, group });
   await permission.save();
-
   res.status(201).json({ status: 'success', data: permission });
 });
 

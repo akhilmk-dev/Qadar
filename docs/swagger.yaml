@@ -34,6 +34,7 @@ components:
             email: ["Invalid email format"]
             password: ["Password must be at least 6 characters"]
             date_of_birth: ["Date of birth is required"]
+
     LoginError:
       type: object
       properties:
@@ -52,6 +53,7 @@ components:
           example:
             email: ["Email is required"]
             password: ["Password must be at least 6 characters"]
+
     ConflictError:
       type: object
       properties:
@@ -71,6 +73,7 @@ components:
         message:
           type: string
           example: Invalid credentials
+
     PromptValidationError:
       type: object
       properties:
@@ -128,6 +131,61 @@ components:
         message:
           type: string
           example: Internal server error
+
+    PasswordReset:
+      type: object
+      required:
+        - current_password
+        - new_password
+      properties:
+        current_password:
+          type: string
+          example: oldPassword123
+        new_password:
+          type: string
+          minLength: 6
+          example: newPassword456
+
+    SendOtp:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          example: customer@example.com
+
+    VerifyOtp:
+      type: object
+      required:
+        - email
+        - otp
+      properties:
+        email:
+          type: string
+          format: email
+          example: customer@example.com
+        otp:
+          type: string
+          pattern: "^[0-9]{5}$"
+          example: "12345"
+
+    UpdatePassword:
+      type: object
+      required:
+        - email
+        - new_password
+      properties:
+        email:
+          type: string
+          format: email
+          example: customer@example.com
+        new_password:
+          type: string
+          minLength: 6
+          example: newPassword123
+
 
 paths:
   /api/V1/auth/customer/register:
@@ -189,18 +247,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationError'
+
         '409':
           description: Conflict (email already exists)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ConflictError'
+
         '404':
           description: Resource not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundError'
+
         '500':
           description: Internal server error
           content:
@@ -247,24 +308,28 @@ paths:
                   email: "akhil@example.com"
                   phone: "7845673847"
                   date_of_birth: "1990-09-03"
+
         '400':
           description: Validation error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/LoginError'
+
         '401':
           description: Invalid credentials
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UnauthorizedError'
+
         '404':
           description: Resource not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundError'
+
         '500':
           description: Internal server error
           content:
@@ -298,24 +363,35 @@ paths:
                 status: success
                 access_token: "<NEW_JWT_ACCESS_TOKEN>"
                 refresh_token: "<NEW_JWT_REFRESH_TOKEN>"
+
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
         '401':
           description: Invalid refresh token
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/TokenError'
+
         '403':
           description: Forbidden
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ForbiddenError'
+
         '404':
           description: Resource not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundError'
+
         '500':
           description: Internal server error
           content:
@@ -335,7 +411,7 @@ paths:
             schema:
               type: object
               required:
-                - refreshToken
+                - refresh_token
               properties:
                 refresh_token:
                   type: string
@@ -343,47 +419,35 @@ paths:
       responses:
         '204':
           description: Logout successful
+
         '400':
           description: Validation error
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: error
-                  message:
-                    type: string
-                    example: Validation failed
-                  errors:
-                    type: object
-                    additionalProperties:
-                      type: array
-                      items:
-                        type: string
-                    example:
-                      refresh_token: ["refersh token is required"]
+                $ref: '#/components/schemas/ValidationError'
+
         '404':
           description: Resource not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundError'
+
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServerError'
-  
-  /prompts:
+
+  /api/V1/prompts:
     post:
       tags:
         - Prompts
       summary: Save prompt and response for a customer
       security:
-        - bearerAuth: []     # Bearer token authorization
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -404,7 +468,7 @@ paths:
                   example: '{"temperature": "20C", "condition": "sunny"}'
                 prompt_type:
                   type: string
-                  example: "coffe cup"
+                  example: "coffee cup"
       responses:
         '201':
           description: Prompt and response saved successfully
@@ -430,7 +494,7 @@ paths:
                         example: '{"temperature": "20C", "condition": "sunny"}'
                       prompt_type:
                         type: string
-                        example: "coffe cup"
+                        example: "coffee cup"
                       customer:
                         type: string
                         example: 64e9f4d7ab1234567890abce
@@ -438,26 +502,294 @@ paths:
                         type: string
                         format: date-time
                         example: "2025-08-21T14:52:00.000Z"
+
         '400':
           description: Validation error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/PromptValidationError'
+
+        '401':
+          description: Unauthorized
+
+  /api/V1/customer/reset-password:
+    post:
+      summary: Reset password (authenticated user)
+      description: Resets password after verifying current password. Requires authentication.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordReset'
+            examples:
+              valid:
+                value:
+                  current_password: "oldPassword123"
+                  new_password: "newPassword456"
+      responses:
+        '200':
+          description: Password updated successfully
+          content:
+            application/json:
+              example:
+                status: success
+                message: Password updated successfully
+
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  message:
+                    type: string
+                    example: Validation failed
+                  errors:
+                    type: object
+                    additionalProperties:
+                      type: array
+                      items:
+                        type: string
+                    example:
+                      current_password: ["Current password is required"]
+                      new_password: ["New password is required"]
+
+        '404':
+          description: Customer not found
+          content:
+            application/json:
+              example:
+                status: error
+                message: Customer not found
+
+        '500':
+          description: Invalid current password
+          content:
+            application/json:
+              example:
+                status: error
+                message: Current password is invalid
+
         '401':
           description: Unauthorized 
           
+  /api/V1/customer/sent-otp:
+    post:
+      summary: Send OTP to email (forgot password)
+      description: Sends OTP to the customer's email for password reset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendOtp'
+            example:
+              email: "customer@example.com"
+      responses:
+        '200':
+          description: OTP sent successfully
+          content:
+            application/json:
+              example:
+                status: success
+                message: OTP sent successfully
 
-components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  message:
+                    type: string
+                    example: Validation failed
+                  errors:
+                    type: object
+                    additionalProperties:
+                      type: array
+                      items:
+                        type: string
+                    example:
+                      email: ["Invalid email format"]
 
+        '404':
+          description: Email not found
+          content:
+            application/json:
+              example:
+                status: error
+                message: Email not found
 
-    
+        '500':
+          description: Server error
+          content:
+            application/json:
+              example:
+                status: error
+                message: Internal server error
 
+  /api/V1/customer/verify-otp:
+    post:
+      summary: Verify OTP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyOtp'
+            example:
+              email: "customer@example.com"
+              otp: "12345"
+      responses:
+        '200':
+          description: OTP verified successfully
+          content:
+            application/json:
+              example:
+                status: success
+                message: OTP verified successfully
 
+        '400':
+          description: Invalid OTP or validation error
+          content:
+            application/json:
+              schema:
+               type: object
+               properties:
+                  status:
+                    type: string
+                    example: error
+                  message:
+                    type: string
+                    example: Validation failed
+                  errors:
+                    type: object
+                    additionalProperties:
+                      type: array
+                      items:
+                        type: string
+                    example:
+                      email: ["Invalid email format"]
+                      otp: ["Otp is required"]               
 
-    
+        '404':
+          description: Email not found
+          content:
+            application/json:
+              example:
+                status: error
+                message: Email not found
+
+  /api/V1/customer/update-password:
+    post:
+      summary: Update password after OTP verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePassword'
+            example:
+              email: "customer@example.com"
+              new_password: "newPassword123"
+      responses:
+        '200':
+          description: Password updated successfully
+          content:
+            application/json:
+              example:
+                status: success
+                message: Password updated successfully
+
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  message:
+                    type: string
+                    example: Validation failed
+                  errors:
+                    type: object
+                    additionalProperties:
+                      type: array
+                      items:
+                        type: string
+                    example:
+                      email: ["Invalid email format"]
+                      new_password: ["new password is required"]
+
+        '404':
+          description: Email not found
+          content:
+            application/json:
+              example:
+                status: error
+                message: Email not found
+
+  /api/V1/customer/resend-otp:
+    post:
+      summary: Resend OTP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendOtp'
+            example:
+              email: "customer@example.com"
+      responses:
+        '200':
+          description: OTP resent successfully
+          content:
+            application/json:
+              example:
+                status: success
+                message: OTP resent successfully
+
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  message:
+                    type: string
+                    example: Validation failed
+                  errors:
+                    type: object
+                    additionalProperties:
+                      type: array
+                      items:
+                        type: string
+                    example:
+                      email: ["Invalid email format"]
+
+        '404':
+          description: Email not found
+          content:
+            application/json:
+              example:
+                status: error
+                message: Email not found

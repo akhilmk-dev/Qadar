@@ -2,6 +2,8 @@ const Customer = require("../models/customerSchema");
 const catchAsync = require("../utils/catchAsync");
 const { InternalServerError, NotFoundError, ForbiddenError } = require("../utils/customErrors");
 const bcrypt = require("bcryptjs");
+const crypto = require('crypto');
+const sendOtpEmail = require("../utils/sendOtpEmail");
 
 
 // =====================
@@ -164,5 +166,106 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: 'success',
     message: 'Password updated successfully',
+  });
+});
+
+
+// =====================
+// FORGET PASSWORD ------ Send otp
+// =====================
+
+exports.sendPasswordOtp = catchAsync(async (req, res, next) => {
+  const { email } = req.body;
+
+  const customer = await Customer.findOne({ email });
+  if (!customer) throw new NotFoundError("Email doesn't exists")
+
+  // const otp = Math.floor(10000 + Math.random() * 90000).toString(); // 5-digit OTP
+  customer.otp = "55555";
+  customer.otp_expires = Date.now() + 2 * 60 * 1000;
+  await customer.save();
+
+  // await sendOtpEmail(email, otp);
+
+  res.status(200).json({
+    status: 'success',
+    message: 'OTP sent to email',
+  });
+});
+
+// =====================
+// FORGET PASSWORD ------ verify otp
+// =====================
+
+exports.verifyOtpOnly = catchAsync(async (req, res, next) => {
+  const { email, otp } = req.body;
+
+  const customer = await Customer.findOne({ email });
+  if (!customer) throw new NotFoundError("Email doesn't exists")
+
+    if (!customer.otp) {
+      return res.status(400).json({ status: 'error', message: 'No OTP found. Please request a new one.' });
+    }
+    
+    if (customer.otp !== otp) {
+      return res.status(400).json({ status: 'error', message: 'Invalid OTP. Please try again.' });
+    }
+    
+    if (customer.otp_expires < Date.now()) {
+      return res.status(400).json({ status: 'error', message: 'OTP has expired. Please request a new one.' });
+    }
+    
+
+  customer.otp = undefined;
+  customer.otp_expires = undefined;
+  customer.is_otp_verified = true; 
+  await customer.save();
+
+  res.status(200).json({
+    status: 'success',
+    message: 'OTP verified successfully',
+  });
+});
+
+// =====================
+// FORGET PASSWORD ------ reset password
+// =====================
+
+exports.resetPasswordAfterOtp = catchAsync(async (req, res, next) => {
+  const { email, new_password } = req.body;
+
+  const customer = await Customer.findOne({ email });
+  if (!customer) {
+    return res.status(404).json({ status: 'error', message: 'Customer not found' });
+  }
+
+  if (!customer.is_otp_verified) {
+    return res.status(403).json({ status: 'error', message: 'OTP verification required' });
+  }
+
+  customer.password = new_password;
+  customer.is_otp_verified = false;
+  await customer.save();
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Password reset successfully',
+  });
+});
+
+exports.resendOtp = catchAsync(async (req, res, next) => {
+  const { email } = req.body;
+  const customer = await Customer.findOne({ email });
+  if (!customer) throw new NotFoundError("Email doesn't exist")
+  const now = Date.now();
+  // const otp = Math.floor(10000 + Math.random() * 90000).toString();
+  const otp = "55555"
+  customer.otp = otp;
+  customer.otp_expires = now + 2 * 60 * 1000; // 2 minutes from now
+  await customer.save();
+  // await sendOtpEmail(email, otp);
+  return res.status(200).json({
+    status: 'success',
+    message: 'OTP resent successfully',
   });
 });

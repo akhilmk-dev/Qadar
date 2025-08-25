@@ -12,7 +12,6 @@ const customerSchema = new mongoose.Schema(
       maxlength: [30, "Name cannot exceed 30 characters"],
       trim: true,
     },
-
     email: {
       type: String,
       required: [true, "Email is required"],
@@ -37,7 +36,13 @@ const customerSchema = new mongoose.Schema(
       type: String,
       required: [true, "Phone number is required"]
     },
-    refresh_token:{type:String}
+    refresh_token:{type:String},
+    otp: String,
+    otp_expires: Date,
+    is_otp_verified: {
+      type: Boolean,
+      default: false,
+    }
   },
   { timestamps: true }
 );
