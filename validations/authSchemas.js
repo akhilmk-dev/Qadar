@@ -4,10 +4,10 @@
 const Joi = require("joi");
 
 const signupSchema = Joi.object({
-  name: Joi.string().min(3).max(30).required().messages({
+  name: Joi.string().min(2).max(30).required().messages({
     "string.base": "Name must be a string",
     "string.empty": "Name is required",
-    "string.min": "Name must be at least 3 characters",
+    "string.min": "Name must be at least 2 characters",
     "string.max": "Name must be at most 30 characters",
     "any.required": "Name is required",
   }),
@@ -46,6 +46,41 @@ const signupSchema = Joi.object({
 
 module.exports = signupSchema;
 
+const updateCustomerSchema = Joi.object({
+  name: Joi.string().min(2).max(30).required().messages({
+    "string.base": "Name must be a string",
+    "string.empty": "Name is required",
+    "string.min": "Name must be at least 2 characters",
+    "string.max": "Name must be at most 30 characters",
+    "any.required": "Name is required",
+  }),
+
+  email: Joi.string().email().required().messages({
+    "string.base": "Email must be a string",
+    "string.empty": "Email is required",
+    "string.email": "Invalid email format",
+    "any.required": "Email is required",
+  }),
+
+  phone: Joi.string()
+    .pattern(/^[0-9]{10}$/) 
+    .required()
+    .messages({
+      "string.empty": "Phone number is required",
+      "string.pattern.base": "Phone number must be a valid 10-digit number",
+      "any.required": "Phone number is required",
+  }),
+
+  date_of_birth: Joi.date()
+    .iso()
+    .less('now')
+    .messages({
+      "date.base": "Date of birth must be a valid date",
+      "date.less": "Date of birth must be in the past",
+      "date.format": "Date of birth must be in ISO format (YYYY-MM-DD)",
+   }),
+});
+
 //customer Login validation schema
 const loginSchema = Joi.object({
   email: Joi.string().email().required().messages({
@@ -65,7 +100,6 @@ const refreshTokenSchema = Joi.object({
     "any.required": "Refresh token is required",
   }),
 });
-
 
 // userSignupSchema.js
 
@@ -156,4 +190,4 @@ const userRefreshTokenSchema = Joi.object({
   }),
 });
 
-module.exports = { signupSchema, userEditSchema, loginSchema, refreshTokenSchema, userSignupSchema, userLoginSchema, userRefreshTokenSchema };
+module.exports = { signupSchema, userEditSchema,updateCustomerSchema, loginSchema, refreshTokenSchema, userSignupSchema, userLoginSchema, userRefreshTokenSchema };

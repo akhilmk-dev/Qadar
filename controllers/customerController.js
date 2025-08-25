@@ -1,6 +1,8 @@
 const Customer = require("../models/customerSchema");
 const catchAsync = require("../utils/catchAsync");
 const { InternalServerError, NotFoundError, ForbiddenError } = require("../utils/customErrors");
+const bcrypt = require("bcryptjs");
+
 
 // =====================
 // CREATE CUSTOMER
@@ -29,7 +31,6 @@ exports.createCustomer = catchAsync(async (req, res, next) => {
     }
   });
 });
-
 
 // =====================
 // GET ALL CUSTOMERS (pagination, search, sort)
@@ -78,7 +79,6 @@ exports.getAllCustomers = catchAsync(async (req, res, next) => {
   });
 });
 
-
 // =====================
 // GET SINGLE CUSTOMER BY ID
 // =====================
@@ -93,7 +93,6 @@ exports.getCustomerById = catchAsync(async (req, res, next) => {
     data: customer,
   });
 });
-
 
 // =====================
 // UPDATE CUSTOMER
@@ -127,7 +126,6 @@ exports.updateCustomer = catchAsync(async (req, res, next) => {
   });
 });
 
-
 // =====================
 // DELETE CUSTOMER
 // =====================
@@ -145,5 +143,26 @@ exports.deleteCustomer = catchAsync(async (req, res, next) => {
       name: customer.name,
       email: customer.email,
     }
+  });
+});
+
+// =====================
+// RESET PASSWORD
+// =====================
+
+exports.resetPassword = catchAsync(async (req, res, next) => {
+  const { current_password, new_password } = req.body;
+
+  const customer = await Customer.findById(req.user.id);
+  if (!customer)throw new NotFoundError("Customer not found")
+
+  const isMatch = await bcrypt.compare(current_password, customer.password);
+  if (!isMatch) throw new InternalServerError("Current password is invalid")
+  customer.password = new_password;
+  await customer.save(); 
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Password updated successfully',
   });
 });

@@ -1,13 +1,14 @@
 // models/Customer.js
 const mongoose = require("mongoose");
 const validator = require("validator");
+const bcrypt = require("bcryptjs");
 
 const customerSchema = new mongoose.Schema(
   {
     name: {
       type: String,
       required: [true, "Name is required"],
-      minlength: [3, "Name must be at least 3 characters long"],
+      minlength: [2, "Name must be at least 2 characters long"],
       maxlength: [30, "Name cannot exceed 30 characters"],
       trim: true,
     },
@@ -40,9 +41,6 @@ const customerSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-
-// Pre-save hook to hash password before saving
-const bcrypt = require("bcryptjs");
 
 customerSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
